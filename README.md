@@ -373,6 +373,8 @@ deletes your saves too) and `~/Library/Caches/Takedawn`.
 1. Run the setup program. It is not code signed, so Windows SmartScreen shows
    "Windows protected your PC" with an unknown publisher. Click More info,
    then Run anyway. Windows may ask the same once more for the program itself.
+   Some antivirus tools flag the download for the same reason; see
+   [Antivirus warnings on Windows](docs/antivirus.md).
 2. The setup installs for your user account only and needs no administrator
    rights. It puts the program in `%LOCALAPPDATA%\Programs\Takedawn`, adds a
    Start menu entry, and offers a desktop icon, which is off unless you tick
@@ -849,6 +851,13 @@ Use Open Anyway in System Settings > Privacy & Security, as described under
 **Windows shows "Windows protected your PC".**
 
 The setup program is not code signed. Click More info, then Run anyway.
+
+**My antivirus flags the Windows download. Is it safe?**
+
+Yes. A few antivirus engines flag the Windows installer because it is not code
+signed, which is a false positive. Most engines pass it, and the code is open
+source. See [Antivirus warnings on Windows](docs/antivirus.md) for how to check
+the file yourself.
 
 **Android will not install the APK.**
 
