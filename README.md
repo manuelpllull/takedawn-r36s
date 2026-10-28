@@ -44,6 +44,8 @@
   [Highlights](#highlights) has the rest.
 - [Download](#download) it for your device and start it. For
   [full speed](#for-full-speed-60-fps) it needs about a Steam Deck's power.
+- On Windows a few antivirus tools flag the unsigned installer. It is a false
+  positive; see [Antivirus warnings](docs/antivirus.md).
 - Point it at a disc image of your own Burnout 3 (USA). It installs the game
   data, then you play.
 - To update, install the new version over the old one. Saves and settings stay.
