@@ -42,6 +42,7 @@ Saves and settings from 0.2.0 carry over.
 - Android: the setup could not create the game's folder on some phones, where the system hides the Android/data folder (GitHub #36).
 - The folder picker in the settings could freeze the whole game when it reached a slow network share or one with many files. It no longer waits on the folder scan, and network shares are listed but not scanned.
 - Linux: the AppImage's setup window did not open on systems without libxkbcommon-x11. The AppImage now brings its own copy for those systems.
+- The PS2 driving layout (Driving controls setting) now applies in two-player games: in Race, Road Rage, Team Crush and Double Impact each player's pad drives with it. It stayed on the Xbox layout there before (guenthermario, GitHub #102).
 
 ## 0.2.0 "Hot Night Crash"
 

@@ -108,6 +108,9 @@ Input > First controller at Player 2 (`input.first_pad = "player2"`,
 first controller to press a button is player 2, so two people can play
 split screen with one keyboard and one controller. Needs a toolkit with
 `input.first_pad`.
+The PS2 driving layout follows the same split: in the two-player stage that
+controller goes by player 2's event, and in the one-player stage and Party Crash
+it goes by player 1's, so a lone controller keeps the PS2 layout there.
 
 ## Touch (Android)
 
@@ -168,12 +171,22 @@ Driving is all of:
 
 | What | Where | Evidence |
 |---|---|---|
-| The game module is the current one, and is not being left | `[0x4D5370]` is the object with vtable 0x3A9ACC (the front end's is 0x3A9E7C); `[0x4D53B4]` is not 6 | the trace: the front-end vtable through boot, menus, garage, the training video and the loading screen; 6 from "Quit > Yes" until the module changes |
+| The game module is the current one, and is not being left | `[0x4D5370]` is the object with vtable 0x3A9ACC, or 0x3A939C in the two-player stage (the front end's is 0x3A9E7C); `[0x4D53B4]` is not 6 | the trace: the front-end vtable through boot, menus, garage, the training video and the loading screen; 6 from "Quit > Yes" until the module changes |
 | Nobody has paused | `[0x4D537C]` is -1 (else the pausing player) | the stage update tests it before it looks at Start (sub_00026050 at 0x26609); 0 on the frame after Start, -1 on the frame Resume takes effect |
 | The title takes a pause now | byte `[0x752D33]` is 0 | tested in the same place; set while the event is left after the results |
 | A crash event's fly-by and captions are not up | byte `[0x4D0767]` is 0 | 1 through the fly-by, and from the captions until A leaves them |
 | The results are not up | byte `[0x4D0738]` is 0 | 1 from the results screen to the end of the event |
 | The event is in play, or counting down | `[0x73B51C]` is 2, or below 2 with the countdown's length at `[0x73B520]` set (not -1.0, not 0) | 2 from the GO; 3 when the event ends for the player; the length (4.5 s in a race, 3 s in a crash event) is written when the countdown begins |
+
+In the two-player stage the last three rows are each player's own, and a pad
+goes by its player's: the title's port 2 is player 1's, port 3 player 2's.
+The race records (results, intro) are `0xC50` apart (two of them, built in a
+loop of two in the game object's constructor, at `0x4CFB20`; the title's own
+`sub_00167DC0` and `sub_00167DF0` read the results bytes `0x4D0738` and
+`0x4D1388` and the intro bytes `0x4D0767` and `0x4D13B7`), the event records
+(phase, countdown) `0x27E0` apart (`sub_00025050` steps both in one loop over
+the players). A player whose event is over is back on the menu layout while
+the other still drives.
 
 The countdown counts as driving because the boost start is on the
 accelerator. A crash counts as driving: the impact time, the aftertouch and
@@ -249,6 +262,8 @@ affected.) A script that is not a stand-in gets neither setting.
 - `tools/headless/controls_all.sh <rundir-prefix>` runs the default set of
   the scene below: ps2 race, xbox race, ps2 crash, and ps2 race with
   `FACE=nintendo`.
+- `tools/headless/controls_split_scene.sh <rundir> race|roadrage|teamcrush|doubleimpact|partycrash`:
+  the same for the two-player modes (both pads), checked by `controls_split_check.py`.
 - `tools/headless/controls_scene.sh <rundir>` with `SCHEME=ps2|xbox`,
   `EVENT=race|crash` and `FACE=xbox|nintendo`: a scripted run through boot, the menus, the garage,
   loading, the countdown, driving, a pause with the accelerator still held,
@@ -262,7 +277,15 @@ affected.) A script that is not a stand-in gets neither setting.
 - A controller in the hand: every run above is a pad script standing in for
   one. The built-in pads of the Steam Deck and the Retroid Pocket, Windows
   (native XInput and SDL) and Linux were not run.
-- Two players: the gate reads player 1's event. Split screen was not run.
+- Two players: run headless on Linux (Vulkan) with two scripted pads standing in for
+  controllers, `tools/headless/controls_split_scene.sh <rundir> <mode>`: Race, Road Rage,
+  Team Crush and Double Impact give both pads the PS2 layout from the countdown, and in
+  Team Crush and Double Impact each pad goes back to the menu layout when its own
+  player's event ends, while the other still drives. Party Crash plays on the first
+  player's records and the first pad throughout (it is the one-player stage), so it
+  goes by player 1 like a one-player event. Not run: keyboard plus controller
+  (Input > First controller), a pause by player 2, real controllers, Windows, Android.
+  Also reported working in split screen on macOS with two controllers.
 - A race to its finish line, Road Rage, Burning Lap and online: the end of an
   event was traced in a crash event and by quitting a race.
 - The crashbreaker itself was not triggered in a run (it needs the wrecks);

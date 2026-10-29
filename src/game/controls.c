@@ -47,6 +47,7 @@ extern ptrdiff_t g_xbox_mem_offset;
 #define CTL_PADS        0x004AE20Cu     /* the pad manager's four records */
 #define CTL_MODULE      0x004D5370u     /* the current module ([app + 0x2E1D0], app 0x4A71A0) */
 #define CTL_VT_GAME     0x003A9ACCu     /* the game module's vtable (the front end's: 0x3A9E7C) */
+#define CTL_VT_GAME2    0x003A939Cu     /* the two-player stage's (docs/split-screen.md) */
 #define CTL_PAUSED_BY   0x004D537Cu     /* the player who paused, -1 while not paused */
 #define CTL_MODULE_STEP 0x004D53B4u     /* the module switch: 4 and 5 coming up, 6 leaving */
 #define CTL_P1          0x004D0738u     /* player 1's race record; player 2's is CTL_P_SIZE on */
@@ -55,6 +56,7 @@ extern ptrdiff_t g_xbox_mem_offset;
 #define CTL_P_STATE     0x08u           /* the camera: 4 chase, 0x40 crash, 0x400 fly-by (logged only) */
 #define CTL_P_INTRO     0x2Fu           /* byte: a crash event's fly-by or captions are up */
 #define CTL_PHASE       0x0073B51Cu     /* player 1's event: 1 before the GO, 2 in play, 3 finished */
+#define CTL_E_SIZE      0x27E0u         /* the event records of player 1 and 2 are this far apart */
 #define CTL_COUNTDOWN   0x0073B520u     /* float: 0, then -1, until the countdown begins; then its length */
 #define CTL_NO_PAUSE    0x00752D33u     /* byte: the title takes no pause now */
 
@@ -75,21 +77,36 @@ static uint32_t (*s_flips)(void);
  * back for a retry. CTL_NO_PAUSE is the title's own "Start does not pause
  * now" (the stage update tests it beside the paused player, sub_00026050 at
  * 0x26609): set over the results. */
-static int ctl_driving(void)
+static int ctl_driving_for(unsigned player)
 {
-    uint32_t mod = M32(CTL_MODULE), phase, cd;
+    uint32_t mod = M32(CTL_MODULE), phase, cd, vt;
 
-    if (mod < 0x10000u || mod >= 0x04000000u || M32(mod) != CTL_VT_GAME)
+    if (mod < 0x10000u || mod >= 0x04000000u)
         return 0;
+    vt = M32(mod);
+    if (vt != CTL_VT_GAME && vt != CTL_VT_GAME2)
+        return 0;
+    /* One pad at a time plays the one-player stage (and Party Crash, which
+     * passes it on): the first player's records whichever port it is on. Only
+     * the two-player stage has a second player with a pad of their own. */
+    if (vt == CTL_VT_GAME)
+        player = 0;
     /* Quitting from the pause menu clears the paused player a second before
      * the module changes: the module is on its way out then. */
     if (M32(CTL_PAUSED_BY) != 0xFFFFFFFFu || M32(CTL_MODULE_STEP) == 6 || M8(CTL_NO_PAUSE))
         return 0;
-    if (M8(CTL_P1 + CTL_P_INTRO) || M8(CTL_P1 + CTL_P_RESULTS))
+    if (M8(CTL_P1 + player * CTL_P_SIZE + CTL_P_INTRO)
+     || M8(CTL_P1 + player * CTL_P_SIZE + CTL_P_RESULTS))
         return 0;
-    phase = M32(CTL_PHASE);
-    cd = M32(CTL_COUNTDOWN);
+    phase = M32(CTL_PHASE + player * CTL_E_SIZE);
+    cd = M32(CTL_COUNTDOWN + player * CTL_E_SIZE);
     return phase == 2 || (phase < 2 && cd != 0xBF800000u && cd != 0);
+}
+
+/* Player 1's event: what the menus, the touch controls and Esc go by. */
+static int ctl_driving(void)
+{
+    return ctl_driving_for(0);
 }
 
 /* BO3_CTL_LOG=<file>: what the gate saw and did, for the scene test
@@ -104,11 +121,13 @@ static void ctl_log_frame(void)
         { CTL_P1 + CTL_P_RESULTS, "p1_results" }, { CTL_P1 + CTL_P_STATE, "p1_state" },
         { CTL_P1 + 0x2Cu, "p1_intro_word" }, { CTL_PHASE, "p1_phase" },
         { CTL_COUNTDOWN, "p1_countdown" }, { 0x00752D30u, "752D30" },
-        { CTL_PHASE + 0x27E0u, "p2_phase" },
+        { CTL_PHASE + CTL_E_SIZE, "p2_phase" }, { CTL_COUNTDOWN + CTL_E_SIZE, "p2_countdown" },
+        { CTL_P1 + CTL_P_SIZE + CTL_P_RESULTS, "p2_results" },
+        { CTL_P1 + CTL_P_SIZE + 0x2Cu, "p2_intro_word" },
     };
     enum { N = sizeof w / sizeof w[0] };
     static uint32_t last[N + 1];
-    static int primed, drv = -1;
+    static int primed, drv = -1, drv2 = -1;
     uint32_t flip = s_flips ? s_flips() : 0, mod = M32(CTL_MODULE), v;
     int i, d;
 
@@ -127,6 +146,12 @@ static void ctl_log_frame(void)
     if (d != drv)
         fprintf(s_log, "D %u driving %d\n", flip, d);
     drv = d;
+    /* Player 2's gate, which the pad of the title's port 3 goes by (the same as
+     * player 1's outside the two-player stage). */
+    d = ctl_driving_for(1);
+    if (d != drv2)
+        fprintf(s_log, "D2 %u driving %d\n", flip, d);
+    drv2 = d;
 }
 
 static void ctl_pad(void)
@@ -165,7 +190,9 @@ static void ctl_pad(void)
     /* The emulated pads sit on the title's last two ports: the title's port
      * 2 is the first host pad. */
     src = usb >= 0 ? xbox_InputSources((DWORD)usb) : 0;
-    driving = ctl_driving();
+    /* The pad of the title's port 2 is player 1's, port 3 player 2's (split
+     * screen): each goes by its own player's event. */
+    driving = ctl_driving_for(usb >= 1 ? 1u : 0u);
     scripted = usb >= 0 && (xbox_InputScriptedPads() & (1u << usb));
     nintendo = xbox_InputFaceLayoutNintendo();
     /* The keys and the on-screen controls are the Xbox layout always. */
