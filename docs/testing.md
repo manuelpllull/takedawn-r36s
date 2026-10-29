@@ -155,7 +155,7 @@ wait ends with `FAIL: ...` in `<rundir>/scene.txt`.
 | `to_first_race.sh` | what a new player gets: no saves, New Profile, the training film, a race |
 | `to_crash.sh`, `to_garage.sh` | Crash mode to its results; the car select |
 | `race_drive.sh` | an AI-driven race or soak, see above |
-| `controls_scene.sh`, `controls_all.sh`, `reverse_scene.sh` | PASS/FAIL checks: the PS2 layout only while driving, the car reverses on the left trigger |
+| `controls_scene.sh`, `controls_all.sh`, `controls_split_scene.sh`, `reverse_scene.sh` | PASS/FAIL checks: the PS2 layout only while driving (also for both players in split screen), the car reverses on the left trigger |
 | `split_scene.sh`, `crash60_scene.sh`, `draw_scene.sh`, `fx_scene.sh`, `hud_scene.sh` | two-player split screen, the 60 fps crash camera, vehicle detail, bloom and motion blur switches, the widescreen HUD |
 | `menu_entry_scene.sh`, `pause_entry_scene.sh`, `unlock_all_scene.sh` | the Takedawn settings entry in the title's menus; the cheats |
 | `custom_music_scene.sh`, `custom_level_scene.sh` | a custom soundtrack, and its loudness from a WAV of the output |

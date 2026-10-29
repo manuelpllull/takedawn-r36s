@@ -38,6 +38,10 @@ a key or a controller button is pressed (xboxrecomp#2). Shipped in 0.2.1.
 Native Windows builds from Git Bash (#12), and the fix for drives with 4K
 sectors (xboxrecomp#1).
 
+### [guenthermario](https://github.com/guenthermario)
+The PS2 driving layout in two-player games (#102): the setting was only
+applied in one-player stages, so split screen kept the Xbox layout.
+
 ### [HeartWorthBreaking](https://github.com/HeartWorthBreaking)
 Optional mod folders: disc files replaced by files in folders named by
 `TAKEDAWN_MODS` (Windows, Linux, macOS; on Android the app's `mods` folder).
